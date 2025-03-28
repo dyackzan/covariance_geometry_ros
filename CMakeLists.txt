@@ -7,6 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wdouble-promotion -Wfloat-equal -Wshadow)
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-inline -fno-inline-small-functions")
 
 find_package(ament_cmake REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -14,18 +15,21 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
-include(ExternalProject)
-find_package(Git REQUIRED)
+include(FetchContent)
 
-externalproject_add(
+FetchContent_Declare(
   covariance_geometry_cpp
-  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp
   GIT_REPOSITORY https://github.com/andreaostuni/covariance_geometry.git
   GIT_TAG master
-  TIMEOUT 10
-  UPDATE_COMMAND ${GIT_EXECUTABLE} pull
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src
-  LOG_DOWNLOAD ON
+)
+
+FetchContent_MakeAvailable(covariance_geometry_cpp)
+
+add_library(${PROJECT_NAME} SHARED src/covariance_geometry_ros.cpp)
+
+target_link_libraries(
+  ${PROJECT_NAME}
+  covariance_geometry_cpp
 )
 
 add_definitions(${EIGEN3_DEFINITIONS})
@@ -36,7 +40,6 @@ include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src/include
 )
 
-add_library(${PROJECT_NAME} SHARED src/covariance_geometry_ros.cpp)
 target_include_directories(
   ${PROJECT_NAME}
   PUBLIC
@@ -47,11 +50,6 @@ target_include_directories(
 add_dependencies(
   ${PROJECT_NAME}
   covariance_geometry_cpp
-)
-
-target_link_libraries(
-  ${PROJECT_NAME}
-  ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src/lib/libcovariance_geometry_cpp.so
 )
 
 ament_target_dependencies(
@@ -73,8 +71,6 @@ install(
 )
 
 install(DIRECTORY include/ DESTINATION include)
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src/include/ DESTINATION include)
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src/lib/ DESTINATION lib)
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
@@ -85,6 +81,15 @@ ament_export_dependencies(
   tf2
   tf2_geometry_msgs
 )
+
+install(TARGETS covariance_geometry_cpp
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 if(BUILD_TESTING)
   set(TEST_TARGETS
