@@ -13,27 +13,13 @@ find_package(Eigen3 REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-
-include(ExternalProject)
-find_package(Git REQUIRED)
-
-externalproject_add(
-  covariance_geometry_cpp
-  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp
-  GIT_REPOSITORY https://github.com/andreaostuni/covariance_geometry.git
-  GIT_TAG master
-  TIMEOUT 10
-  UPDATE_COMMAND ${GIT_EXECUTABLE} pull
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src
-  LOG_DOWNLOAD ON
-)
+find_package(covariance_geometry_cpp REQUIRED)
 
 add_definitions(${EIGEN3_DEFINITIONS})
 
 include_directories(
   include
   ${EIGEN3_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src/include
 )
 
 add_library(${PROJECT_NAME} SHARED src/covariance_geometry_ros.cpp)
@@ -49,13 +35,9 @@ add_dependencies(
   covariance_geometry_cpp
 )
 
-target_link_libraries(
-  ${PROJECT_NAME}
-  ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src/lib/libcovariance_geometry_cpp.so
-)
-
 ament_target_dependencies(
   ${PROJECT_NAME}
+  covariance_geometry_cpp
   Eigen3
   geometry_msgs
   tf2
@@ -73,8 +55,6 @@ install(
 )
 
 install(DIRECTORY include/ DESTINATION include)
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src/include/ DESTINATION include)
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/covariance_geometry_cpp/src/lib/ DESTINATION lib)
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 

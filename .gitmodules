@@ -1,0 +1,3 @@
+[submodule "dependencies/covariance_geometry"]
+	path = dependencies/covariance_geometry
+	url = git@github.com:andreaostuni/covariance_geometry.git
